@@ -1,0 +1,109 @@
+{
+  "invalidUsers": [
+    {
+      "username": "",
+      "password": "password123",
+      "reason": "empty_username"
+    },
+    {
+      "username": "user123",
+      "password": "",
+      "reason": "empty_password"
+    },
+    {
+      "username": null,
+      "password": "password123",
+      "reason": "null_username"
+    },
+    {
+      "username": "user123",
+      "password": null,
+      "reason": "null_password"
+    }
+  ],
+  "invalidProducts": [
+    {
+      "productId": -1,
+      "reason": "negative_id"
+    },
+    {
+      "productId": 0,
+      "reason": "zero_id"
+    },
+    {
+      "productId": "abc",
+      "reason": "non_numeric_id"
+    },
+    {
+      "productId": null,
+      "reason": "null_id"
+    }
+  ],
+  "invalidCarts": [
+    {
+      "userId": -1,
+      "products": [],
+      "reason": "negative_user_id"
+    },
+    {
+      "userId": 1,
+      "products": [
+        {
+          "productId": -1,
+          "quantity": 1
+        }
+      ],
+      "reason": "negative_product_id"
+    },
+    {
+      "userId": 1,
+      "products": [
+        {
+          "productId": 1,
+          "quantity": -1
+        }
+      ],
+      "reason": "negative_quantity"
+    },
+    {
+      "userId": 1,
+      "products": [
+        {
+          "productId": 1,
+          "quantity": 0
+        }
+      ],
+      "reason": "zero_quantity"
+    }
+  ],
+  "invalidPayments": [
+    {
+      "cardNumber": "1234567890123456",
+      "expiryMonth": "13",
+      "expiryYear": "2025",
+      "cvv": "123",
+      "reason": "invalid_expiry_month"
+    },
+    {
+      "cardNumber": "4111111111111111",
+      "expiryMonth": "12",
+      "expiryYear": "2020",
+      "cvv": "123",
+      "reason": "expired_card"
+    },
+    {
+      "cardNumber": "4111111111111111",
+      "expiryMonth": "12",
+      "expiryYear": "2025",
+      "cvv": "12345",
+      "reason": "invalid_cvv_length"
+    },
+    {
+      "cardNumber": "123",
+      "expiryMonth": "12",
+      "expiryYear": "2025",
+      "cvv": "123",
+      "reason": "invalid_card_number_length"
+    }
+  ]
+}

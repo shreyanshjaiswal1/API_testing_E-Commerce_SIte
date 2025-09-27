@@ -1,0 +1,9 @@
+E-Commerce API Testing - Demo Results
+====================================
+Execution Time: Sat Sep 27 01:45:00 IST 2025
+Total Tests: 8
+Passed Tests: 6
+Failed Tests: 2
+Pass Rate: 75%
+
+Status: SOME TESTS FAILED

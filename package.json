@@ -1,0 +1,51 @@
+{
+  "name": "E-Commerce API Test Automation",
+  "version": "1.0.0",
+  "description": "Comprehensive API testing suite for E-Commerce applications using Postman and Newman",
+  "main": "index.js",
+  "scripts": {
+    "test": "newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json",
+    "test:html": "newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json -r html --reporter-html-export reports/test-report.html",
+    "test:json": "newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json -r json --reporter-json-export reports/test-results.json",
+    "test:junit": "newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json -r junit --reporter-junit-export reports/test-results.xml",
+    "test:all": "npm run test:html && npm run test:json && npm run test:junit",
+    "test:auth": "newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json --folder \"Authentication\"",
+    "test:products": "newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json --folder \"Products\"",
+    "test:cart": "newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json --folder \"Cart\"",
+    "test:orders": "newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json --folder \"Orders\"",
+    "test:payments": "newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json --folder \"Payments\"",
+    "test:smoke": "newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json --folder \"Authentication\" --folder \"Products\"",
+    "test:regression": "newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json -n 3 --delay-request 1000",
+    "test:load": "newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json -n 10 --delay-request 500",
+    "setup": "mkdir -p reports && npm install",
+    "install-global": "npm install -g newman newman-reporter-html newman-reporter-htmlextra",
+    "validate": "echo 'Validating collection and environment files...' && newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json --dry-run"
+  },
+  "keywords": [
+    "api-testing",
+    "postman",
+    "newman",
+    "e-commerce",
+    "automation",
+    "testing",
+    "qa",
+    "rest-api",
+    "integration-testing",
+    "test-automation"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "newman": "^6.0.0",
+    "newman-reporter-html": "^1.0.5",
+    "newman-reporter-htmlextra": "^1.23.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/ecommerce-api-testing"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  }
+}

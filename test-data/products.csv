@@ -1,0 +1,10 @@
+product_id,expected_status,test_type
+1,200,valid_product
+2,200,valid_product
+3,200,valid_product
+20,200,valid_product
+999,404,invalid_product
+0,404,invalid_product
+-1,404,invalid_product
+abc,404,invalid_product_id
+null,404,null_product_id

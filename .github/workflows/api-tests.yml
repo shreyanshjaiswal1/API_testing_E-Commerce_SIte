@@ -1,0 +1,231 @@
+name: API Testing CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run tests daily at 6 AM UTC
+    - cron: '0 6 * * *'
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 18.x]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm install -g newman newman-reporter-html newman-reporter-htmlextra
+        npm install
+    
+    - name: Create reports directory
+      run: mkdir -p reports
+    
+    - name: Validate Collection and Environment
+      run: |
+        echo "Validating Postman collection and environment files..."
+        newman run E-Commerce_API_Tests.postman_collection.json -e E-Commerce_API_Env.postman_environment.json --dry-run
+    
+    - name: Run Smoke Tests
+      run: |
+        echo "Running smoke tests..."
+        newman run E-Commerce_API_Tests.postman_collection.json \
+          -e E-Commerce_API_Env.postman_environment.json \
+          --folder "Authentication" \
+          --folder "Products" \
+          -r cli,json \
+          --reporter-json-export reports/smoke-test-results.json
+    
+    - name: Run Full Test Suite
+      run: |
+        echo "Running full test suite..."
+        newman run E-Commerce_API_Tests.postman_collection.json \
+          -e E-Commerce_API_Env.postman_environment.json \
+          -r html,json,junit \
+          --reporter-html-export reports/test-report.html \
+          --reporter-json-export reports/test-results.json \
+          --reporter-junit-export reports/test-results.xml \
+          --timeout-request 10000 \
+          --timeout-script 5000
+    
+    - name: Run Load Tests
+      run: |
+        echo "Running load tests..."
+        newman run E-Commerce_API_Tests.postman_collection.json \
+          -e E-Commerce_API_Env.postman_environment.json \
+          --folder "Products" \
+          -n 5 \
+          --delay-request 500 \
+          -r json \
+          --reporter-json-export reports/load-test-results.json
+    
+    - name: Upload Test Reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-reports-node-${{ matrix.node-version }}
+        path: reports/
+        retention-days: 30
+    
+    - name: Publish Test Results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: API Test Results (Node ${{ matrix.node-version }})
+        path: reports/test-results.xml
+        reporter: java-junit
+        fail-on-error: true
+    
+    - name: Comment PR with Test Results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          try {
+            const results = JSON.parse(fs.readFileSync('reports/test-results.json', 'utf8'));
+            const stats = results.run.stats;
+            const comment = `## 🧪 API Test Results (Node ${{ matrix.node-version }})
+            
+            | Metric | Value |
+            |--------|-------|
+            | Total Tests | ${stats.tests.total} |
+            | Passed | ✅ ${stats.tests.passed} |
+            | Failed | ❌ ${stats.tests.failed} |
+            | Skipped | ⏭️ ${stats.tests.skipped || 0} |
+            | Total Assertions | ${stats.assertions.total} |
+            | Assertion Failures | ${stats.assertions.failed} |
+            | Average Response Time | ${Math.round(stats.requests.average)} ms |
+            
+            ${stats.tests.failed > 0 ? '⚠️ Some tests failed. Please check the detailed report.' : '🎉 All tests passed!'}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Could not read test results file:', error.message);
+          }
+
+  performance-check:
+    runs-on: ubuntu-latest
+    needs: api-tests
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+    
+    - name: Install Newman
+      run: npm install -g newman
+    
+    - name: Performance Baseline Test
+      run: |
+        echo "Running performance baseline tests..."
+        newman run E-Commerce_API_Tests.postman_collection.json \
+          -e E-Commerce_API_Env.postman_environment.json \
+          --folder "Products" \
+          -n 10 \
+          --delay-request 100 \
+          -r json \
+          --reporter-json-export performance-results.json
+    
+    - name: Analyze Performance
+      run: |
+        echo "Analyzing performance results..."
+        node -e "
+        const fs = require('fs');
+        const results = JSON.parse(fs.readFileSync('performance-results.json', 'utf8'));
+        const avgResponseTime = results.run.stats.requests.average;
+        const maxResponseTime = Math.max(...results.run.executions.map(e => e.response?.responseTime || 0));
+        
+        console.log('Average Response Time:', avgResponseTime + 'ms');
+        console.log('Max Response Time:', maxResponseTime + 'ms');
+        
+        if (avgResponseTime > 2000) {
+          console.error('❌ Performance degradation detected! Average response time exceeds 2000ms');
+          process.exit(1);
+        } else {
+          console.log('✅ Performance is within acceptable limits');
+        }
+        "
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: api-tests
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+    
+    - name: Install Newman
+      run: npm install -g newman
+    
+    - name: Run Security-focused Tests
+      run: |
+        echo "Running security-focused tests..."
+        newman run E-Commerce_API_Tests.postman_collection.json \
+          -e E-Commerce_API_Env.postman_environment.json \
+          --folder "Authentication" \
+          --folder "Payments" \
+          -r json \
+          --reporter-json-export security-test-results.json
+    
+    - name: Check for Security Issues
+      run: |
+        echo "Analyzing security test results..."
+        node -e "
+        const fs = require('fs');
+        const results = JSON.parse(fs.readFileSync('security-test-results.json', 'utf8'));
+        const failures = results.run.failures;
+        
+        if (failures.length > 0) {
+          console.log('Security test failures detected:');
+          failures.forEach(failure => {
+            console.log('- ' + failure.error.test + ': ' + failure.error.message);
+          });
+        } else {
+          console.log('✅ No security issues detected in API tests');
+        }
+        "
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [api-tests, performance-check, security-scan]
+    if: always()
+    
+    steps:
+    - name: Notify on Success
+      if: ${{ needs.api-tests.result == 'success' && needs.performance-check.result == 'success' && needs.security-scan.result == 'success' }}
+      run: |
+        echo "🎉 All API tests, performance checks, and security scans completed successfully!"
+    
+    - name: Notify on Failure
+      if: ${{ needs.api-tests.result == 'failure' || needs.performance-check.result == 'failure' || needs.security-scan.result == 'failure' }}
+      run: |
+        echo "❌ One or more test suites failed. Please check the logs and reports."
+        exit 1

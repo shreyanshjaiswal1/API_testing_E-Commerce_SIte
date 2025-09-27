@@ -1,0 +1,11 @@
+username,password,expected_result
+mor_2314,83r5^_,success
+johnd,m38rmF$,success
+william56,kev02937@,success
+david_r,3478*#54,success
+invalid_user,wrong_password,failure
+admin,admin,failure
+test,test,failure
+,password123,failure
+username123,,failure
+mor_2314,wrong_pass,failure
